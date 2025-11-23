@@ -1,0 +1,94 @@
+version: "3.9"
+
+services:
+
+  orchestrator:
+    build: ./orchestrator
+    container_name: orchestrator
+    restart: always
+    network_mode: host
+    environment:
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_HOST: "tcp://127.0.0.1:2376"
+      DOCKER_CERT_PATH: "/etc/docker/certs"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./orchestrator/logs:/logs
+      - /etc/docker/certs:/etc/docker/certs:ro
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:latest
+    container_name: zigbee2mqtt
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./zigbee2mqtt:/app/data
+    environment:
+      - TZ=Australia/Brisbane
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./homeassistant:/config
+    environment:
+      - TZ=Australia/Brisbane
+
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./nodered/data:/data
+    environment:
+      - TZ=Australia/Brisbane
+
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: frigate
+    network_mode: host
+    restart: unless-stopped
+    shm_size: "64mb"
+    volumes:
+      - ./frigate/config:/config
+      - ./frigate/media:/media/frigate
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Australia/Brisbane
+
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./plex/config:/config
+      - ./plex/transcode:/transcode
+    environment:
+      - TZ=Australia/Brisbane
+      - PUID=1000
+      - PGID=1000
+
+  scrypted:
+    image: ghcr.io/koush/scrypted:latest
+    container_name: scrypted
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./scrypted:/server/volume
+    ports:
+      - "10443:10443"  # Scrypted web UI
+      - "554:554"      # RTSP
